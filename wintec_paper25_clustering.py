@@ -7,6 +7,74 @@ Original file is located at
     https://colab.research.google.com/drive/15Gm6VguJpntvV0K_Wfh5nIHgcBzeXktK
 """
 
+# ELBOW
+!pip install pandas scikit-learn matplotlib --quiet
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from google.colab import files
+
+uploaded = files.upload()
+filenames = list(uploaded.keys())
+if len(filenames) != 2:
+    raise ValueError("Please upload exactly TWO files.")
+def standardize_columns(df):
+    if 'pm25value' in df.columns:
+        df = df.rename(columns={
+            'pm25value': 'PM2.5 (ug/m3)',
+            'pm10value': 'PM10 (ug/m3)',
+            'atvalue': 'Temperature (C)'
+        })
+    return df[['PM2.5 (ug/m3)', 'PM10 (ug/m3)', 'Temperature (C)']].dropna()
+
+# Load and preprocess
+df1 = pd.read_csv(filenames[0])
+df2 = pd.read_csv(filenames[1])
+loc1 = filenames[0].replace(".csv", "")
+loc2 = filenames[1].replace(".csv", "")
+data1 = standardize_columns(df1)
+data2 = standardize_columns(df2)
+combined = pd.concat([data1, data2], ignore_index=True)
+
+# WCSS (elbow) function
+def calculate_wcss(data, max_k=10):
+    wcss = []
+    for k in range(1, max_k):
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(data)
+        wcss.append(kmeans.inertia_)
+    return wcss
+
+# Calculate WCSS
+wcss_1 = calculate_wcss(data1)
+wcss_2 = calculate_wcss(data2)
+wcss_combined = calculate_wcss(combined)
+
+# Plot elbow curves
+plt.figure(figsize=(15, 4))
+
+plt.subplot(1, 3, 1)
+plt.plot(range(1, 10), wcss_1, marker='o', color='blue')
+#plt.title(f'{loc1} Elbow Method')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('WCSS')
+
+plt.subplot(1, 3, 2)
+plt.plot(range(1, 10), wcss_2, marker='o', color='green')
+#plt.title(f'{loc2} Elbow Method')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('WCSS')
+
+plt.subplot(1, 3, 3)
+plt.plot(range(1, 10), wcss_combined, marker='o', color='purple')
+#plt.title('Combined Elbow Method')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('WCSS')
+
+plt.tight_layout()
+plt.show()
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
@@ -354,7 +422,7 @@ for cluster_id in [0, 1, 2]:
 
 plt.xlabel("Temperature (°C)", fontsize=12)
 plt.ylabel("AQI", fontsize=12)
-plt.title("Combined AQI vs Temperature Clustering – Claudelands & Rotokauri", fontsize=14, weight='bold')
+#plt.title("Combined AQI vs Temperature Clustering – Claudelands & Rotokauri", fontsize=14, weight='bold')
 plt.legend(title="Cluster")
 plt.grid(True, linestyle='--', linewidth=0.5, alpha=0.6)
 plt.tight_layout()
